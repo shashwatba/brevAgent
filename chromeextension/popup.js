@@ -1,21 +1,25 @@
 // popup.js - Handles the extension popup interface
 
-const API_BASE_URL = 'http://localhost:8000';
+// Use your Brev deployment URL
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:8000'
+    : 'https://camel-tutor-backend.brev.dev'; // Replace with your actual Brev URL
 
 document.addEventListener('DOMContentLoaded', async () => {
     const difficultySlider = document.getElementById('difficulty-slider');
-const difficultyLabel = document.getElementById('difficulty-label');
+    const difficultyLabel = document.getElementById('difficulty-label');
 
-difficultySlider.addEventListener('input', () => {
-    const value = difficultySlider.value;
-    if (value === '1') {
-        difficultyLabel.textContent = 'Small';
-    } else if (value === '2') {
-        difficultyLabel.textContent = 'Medium';
-    } else {
-        difficultyLabel.textContent = 'Large';
-    }
-});
+    difficultySlider.addEventListener('input', () => {
+        const value = difficultySlider.value;
+        if (value === '1') {
+            difficultyLabel.textContent = 'Small';
+        } else if (value === '2') {
+            difficultyLabel.textContent = 'Medium';
+        } else {
+            difficultyLabel.textContent = 'Large';
+        }
+    });
+    
     const topicInput = document.getElementById('topic-input');
     const startButton = document.getElementById('start-tracking');
     const formatSelector = document.getElementById('quiz-format');
@@ -23,6 +27,9 @@ difficultySlider.addEventListener('input', () => {
     const topicsListDiv = document.getElementById('topics-list');
     const trackingInfoDiv = document.getElementById('tracking-info');
     const clearButton = document.getElementById('clear-data');
+    
+    // Check API health on load
+    checkAPIHealth();
     
     // Load and display current tracking data
     await displayCurrentTracking();
@@ -40,8 +47,6 @@ difficultySlider.addEventListener('input', () => {
         showStatus('Generating keywords...', 'success');
         
         try {
-            // Call the FastAPI backend to generate keywords
-
             const selectedFormat = formatSelector.value;
             await chrome.storage.local.set({ quizFormat: selectedFormat });
             
@@ -54,7 +59,8 @@ difficultySlider.addEventListener('input', () => {
             });
             
             if (!response.ok) {
-                throw new Error('Failed to generate keywords');
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to generate keywords');
             }
             
             const data = await response.json();
@@ -68,7 +74,7 @@ difficultySlider.addEventListener('input', () => {
                 keywords: keywords,
                 keywordCounts: {},
                 createdAt: new Date().toISOString(),
-                threshold: 5 // Number of times a keyword must appear before quiz
+                threshold: 5
             };
             
             // Initialize keyword counts
@@ -93,7 +99,7 @@ difficultySlider.addEventListener('input', () => {
             
         } catch (error) {
             console.error('Error:', error);
-            showStatus('Error generating keywords. Make sure the server is running.', 'error');
+            showStatus(error.message || 'Error generating keywords. Check your connection.', 'error');
         } finally {
             startButton.disabled = false;
         }
@@ -107,6 +113,18 @@ difficultySlider.addEventListener('input', () => {
             showStatus('All data cleared', 'success');
         }
     });
+    
+    // Check API health
+    async function checkAPIHealth() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/health`);
+            if (!response.ok) {
+                showStatus('API connection issue. Check your settings.', 'error');
+            }
+        } catch (error) {
+            showStatus('Cannot connect to API. Using local mode.', 'error');
+        }
+    }
     
     // Display current tracking topics
     async function displayCurrentTracking() {

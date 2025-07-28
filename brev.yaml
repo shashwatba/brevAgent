@@ -1,0 +1,47 @@
+# brev.yaml - Brev deployment configuration
+name: camel-tutor-backend
+description: Learning Extension API with LangChain and Nemo
+
+# Runtime configuration
+runtime: python3.11
+
+# Environment variables
+env:
+  - name: NEMO_API_URL
+    description: "Nemo model API endpoint URL"
+    required: true
+  - name: NEMO_API_KEY
+    description: "API key for Nemo model access"
+    required: true
+    secret: true
+  - name: HUGGINGFACE_API_KEY
+    description: "HuggingFace API key (fallback)"
+    required: false
+    secret: true
+
+# Build configuration
+build:
+  commands:
+    - pip install -r requirements.txt
+    - mkdir -p quiz_data
+
+# Run configuration
+run:
+  command: uvicorn main:app --host 0.0.0.0 --port $PORT
+  
+# Health check
+healthcheck:
+  path: /health
+  interval: 30s
+  timeout: 10s
+
+# Resources
+resources:
+  cpu: 1
+  memory: 1Gi
+  
+# Persistence for quiz data
+volumes:
+  - name: quiz-data
+    mount_path: /app/quiz_data
+    size: 5Gi
