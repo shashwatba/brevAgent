@@ -1,5 +1,5 @@
 # brev.yaml - Brev deployment configuration
-name: camel-tutor-backend
+name: tutor-backend
 description: Learning Extension API with LangChain and Nemo
 
 # Runtime configuration
@@ -7,17 +7,14 @@ runtime: python3.11
 
 # Environment variables
 env:
-  - name: NEMO_API_URL
-    description: "Nemo model API endpoint URL"
+  - name: NVIDIA_MODEL_NAME
+    description: "Nvidia model name"
     required: true
-  - name: NEMO_API_KEY
+  - name: NVIDIA_API_KEY
     description: "API key for Nemo model access"
     required: true
     secret: true
-  - name: HUGGINGFACE_API_KEY
-    description: "HuggingFace API key (fallback)"
-    required: false
-    secret: true
+
 
 # Build configuration
 build:
@@ -27,7 +24,7 @@ build:
 
 # Run configuration
 run:
-  command: uvicorn main:app --host 0.0.0.0 --port $PORT
+  command: uvicorn fastAPI:app --host 0.0.0.0 --port $PORT
   
 # Health check
 healthcheck:
